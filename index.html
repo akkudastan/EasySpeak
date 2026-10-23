@@ -18,6 +18,30 @@
     .note-flag { position: relative; width: 36px; height: 36px; border: 1px solid #cbd5e1; border-radius: 8px 8px 8px 2px; background: #fef9c3; font-size: 18px; cursor: pointer; display: none; align-items: center; justify-content: center; }
     .note-flag.show { display: flex; }
     .note-flag.album-flag { background: #dbeafe; border-radius: 8px 8px 2px 8px; }
+    .note-flag.map-flag { background: #dcfce7; border-radius: 2px 8px 8px 8px; }
+    .map-overlay { position: fixed; inset: 0; background: #bfe3f7; z-index: 60; display: flex; flex-direction: column; }
+    .map-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #ffffff; border-bottom: 1px solid #cbd5e1; flex-shrink: 0; }
+    .map-bar b { white-space: nowrap; }
+    .map-presets { display: flex; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; }
+    .map-presets button { flex-shrink: 0; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 999px; background: #f8fafc; font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; white-space: nowrap; }
+    .map-presets button.on { background: #0f172a; color: #ffffff; border-color: #0f172a; }
+    .map-stage { position: relative; flex: 1; min-height: 0; }
+    .map-stage svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+    #map_world path { stroke: #64748b; stroke-width: 0.6; stroke-linejoin: round; vector-effect: non-scaling-stroke; fill-rule: evenodd; cursor: pointer; }
+    #map_world path.sel { stroke: #0f172a; stroke-width: 2; filter: brightness(0.92); }
+    #map_states path { fill: none; stroke: #475569; stroke-width: 0.8; stroke-dasharray: 3 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; pointer-events: none; }
+    #map_labels text { pointer-events: none; paint-order: stroke; stroke: rgba(255, 255, 255, 0.85); stroke-width: 3px; stroke-linejoin: round; fill: #1e293b; }
+    #map_labels .cn { font-weight: 700; letter-spacing: 0.4px; }
+    #map_labels .ct { font-size: 10.5px; fill: #0f172a; }
+    #map_labels .st { font-size: 10px; font-style: italic; fill: #475569; letter-spacing: 0.3px; }
+    #map_labels circle { fill: #dc2626; stroke: #ffffff; stroke-width: 1.2px; }
+    .map-zoom { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .map-zoom button { width: 38px; height: 38px; border: 1px solid #94a3b8; border-radius: 8px; background: #ffffff; font-size: 22px; line-height: 1; cursor: pointer; }
+    .map-info { position: absolute; left: 10px; right: 10px; bottom: 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; font-size: 14px; min-height: 38px; display: flex; align-items: center; }
+    .map-info small { color: #64748b; }
+    .map-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; font-size: 15px; color: #334155; background: #bfe3f7; }
+    .map-status[hidden] { display: none; }
+    .map-src { background: #ffffff; border-top: 1px solid #cbd5e1; padding: 6px 12px; font-size: 11px; line-height: 1.35; color: #64748b; flex-shrink: 0; }
     .note-flag.has::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: #dc2626; border: 2px solid #fff; }
 
     /* Экраны */
@@ -151,6 +175,7 @@
       <select class="lang-toggle" id="langToggle" onchange="setUiLang(this.value)"><option value="kk">ҚАЗ</option><option value="ru">РУС</option><option value="en">ENG</option></select>
       <button class="note-flag show" id="noteBtn" onclick="openNotes()">📝</button>
       <button class="note-flag show album-flag" id="albumBtn" onclick="openAlbum()">🎨</button>
+      <button class="note-flag show map-flag" id="mapBtn" onclick="openMap()">🗺️</button>
     </div>
   </div>
 
@@ -224,6 +249,17 @@
     </div>
   </div>
 
+  <div id="mapOverlay" class="map-overlay" hidden>
+    <div class="map-bar"><b data-i18n="mapTitle"></b><div class="map-presets" id="map_presets"></div><button class="mini-btn" onclick="closeMap()" data-i18n="close"></button></div>
+    <div class="map-stage" id="map_stage">
+      <svg id="map_svg"><g id="map_world"></g><g id="map_states"></g><g id="map_labels"></g></svg>
+      <div class="map-zoom"><button id="map_zin" aria-label="+">+</button><button id="map_zout" aria-label="−">−</button></div>
+      <div class="map-info" id="map_info"></div>
+      <div class="map-status" id="map_status"></div>
+    </div>
+    <div class="map-src" data-i18n="mapSrc"></div>
+  </div>
+
   <div id="notesOverlay" class="notes-overlay" hidden onclick="if (event.target === this) closeNotes()">
     <div class="notes-panel">
       <div class="notes-head"><b id="notesTitle"></b><button class="mini-btn" onclick="closeNotes()" data-i18n="close"></button></div>
@@ -248,6 +284,7 @@
         histEmpty: 'Тарих әзірге бос', histCount: 'Аудармалар: {n}', ownTime: 'Сіздің уақытыңыз', same: 'сізбен бірдей', hrs: 'сағ',
         ratesNone: 'Бағамдар жоқ: онлайн-дереккөздер жауап бермеді. Интернетті тексеріңіз.', ratesCached: 'Дереккөз: {s} (сақталған: {f}; бағам күні: {d}). Жаңартылуда...', ratesNew: 'Дереккөз: {s} · бағам күні: {d} · жүктелді: {f}',
         curSources: 'Бағам дереккөздері', refresh: 'Жаңарту', usedMark: 'қолданылды', okMark: 'жауап береді', badMark: 'жауап бермеді', waitMark: 'күту...', tapMark: 'жүктеу үшін басыңыз', keLoading: 'Негізгі сөз тіркестері жүктелуде...', keNone: 'Ештеңе табылмады.', keFail: 'Базаны ашу мүмкін болмады: браузер қолдамайды.',
+        mapTitle: 'Карта', mapHint: 'Елді немесе штатты басыңыз. Картаны саусақпен жылжытыңыз, екі саусақпен үлкейтіңіз.', mapSrc: 'Шекаралар: Natural Earth (қоғамдық домен), АҚШ штаттары: us-atlas (U.S. Census Bureau). Карта бағдар үшін ғана; шекаралар аумақтардың мәртебесі туралы ресми ұстанымды білдірмейді.', mapLoad: 'Шекара деректері жүктелуде...', mapFail: 'Шекара деректері жүктелмеді.<br>Бірінші ашқанда интернет керек: деректер бір рет жүктеліп, браузерде сақталады.',
         albumTitle: 'Альбом', undo: 'Қайтару', eraser: 'Өшіргіш', newPage: '+ Бет', delPage: 'Бетті жою', download: 'PNG жүктеу', pageWord: 'Бет', prev: '←', next: '→'
       },
       ru: {
@@ -260,6 +297,7 @@
         histEmpty: 'История пока пуста', histCount: 'Переводов: {n}', ownTime: 'Ваше время', same: 'как у вас', hrs: 'ч',
         ratesNone: 'Курсов нет: онлайн-источники не ответили. Проверьте интернет.', ratesCached: 'Источник: {s} (сохранено: {f}; дата курса: {d}). Обновляю...', ratesNew: 'Источник: {s} · дата курса: {d} · загружено: {f}',
         curSources: 'Источники курсов', refresh: 'Обновить', usedMark: 'используется', okMark: 'отвечает', badMark: 'не ответил', waitMark: 'ожидание...', tapMark: 'нажмите, чтобы загрузить', keLoading: 'Загружаю базу выражений...', keNone: 'Ничего не найдено.', keFail: 'Не удалось открыть базу: браузер не поддерживает распаковку.',
+        mapTitle: 'Карта', mapHint: 'Нажмите на страну. Двигайте карту пальцем, приближайте щипком или колесом мыши.', mapSrc: 'Границы: Natural Earth (общественное достояние), штаты США: us-atlas (U.S. Census Bureau). Карта только для ориентира: границы не выражают официальной позиции о статусе территорий.', mapLoad: 'Загружаю границы стран...', mapFail: 'Не удалось загрузить границы стран.<br>Нужен интернет при первом открытии: данные скачиваются один раз и потом запоминаются в браузере.',
         albumTitle: 'Альбом', undo: 'Отменить', eraser: 'Ластик', newPage: '+ Страница', delPage: 'Удалить страницу', download: 'Скачать PNG', pageWord: 'Стр.', prev: '←', next: '→'
       },
       en: {
@@ -272,6 +310,7 @@
         histEmpty: 'History is empty', histCount: 'Translations: {n}', ownTime: 'Your time', same: 'same as you', hrs: 'h',
         ratesNone: 'No rates: the online sources did not answer. Check your internet connection.', ratesCached: 'Source: {s} (saved: {f}; rate date: {d}). Updating...', ratesNew: 'Source: {s} · rate date: {d} · loaded: {f}',
         curSources: 'Rate sources', refresh: 'Refresh', usedMark: 'in use', okMark: 'responding', badMark: 'no answer', waitMark: 'waiting...', tapMark: 'tap to load', keLoading: 'Loading the phrase base...', keNone: 'Nothing found.', keFail: 'Could not open the base: the browser cannot unpack it.',
+        mapTitle: 'Map', mapHint: 'Tap a country. Drag to move, pinch or use the mouse wheel to zoom.', mapSrc: 'Borders: Natural Earth (public domain), US states: us-atlas (U.S. Census Bureau). For orientation only: borders do not express any official position on the status of territories.', mapLoad: 'Loading border data...', mapFail: 'Could not load border data.<br>Internet is needed on first open: the data is downloaded once and then saved in the browser.',
         albumTitle: 'Album', undo: 'Undo', eraser: 'Eraser', newPage: '+ Page', delPage: 'Delete page', download: 'Download PNG', pageWord: 'Page', prev: '←', next: '→'
       }
     };
@@ -836,7 +875,7 @@
       fillCurrencySelects();
       if (currentResult) renderResult();
       else if (!document.getElementById('dictInput').value.trim()) document.getElementById('resultContainer').innerHTML = `<div class="result-placeholder">${t('resultPh')}</div>`;
-      renderHistory(); renderTime(); renderCurrency(); renderRateSources(); albumInfo(); if (currentSource === 'keyexp') renderKeyExp();
+      renderHistory(); renderTime(); renderCurrency(); renderRateSources(); albumInfo(); if (window.mapRefresh) mapRefresh(); if (currentSource === 'keyexp') renderKeyExp();
       if (!document.getElementById('notesOverlay').hidden) document.getElementById('notesTitle').textContent = t('notes');
     }
     function setUiLang(v) {
@@ -981,6 +1020,422 @@
         setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       }, 'image/png');
     }
+    // ---------- КАРТА (границы: Natural Earth, штаты: us-atlas; всё в обёртке, чтобы не пересекаться с остальным кодом) ----------
+    (function () {
+// Русские названия стран (ключ — английское название из данных Natural Earth)
+const RU = {
+"Afghanistan":"Афганистан","Albania":"Албания","Algeria":"Алжир","Andorra":"Андорра","Angola":"Ангола","Argentina":"Аргентина","Armenia":"Армения","Australia":"Австралия","Austria":"Австрия","Azerbaijan":"Азербайджан",
+"Bahamas":"Багамы","Bangladesh":"Бангладеш","Belarus":"Беларусь","Belgium":"Бельгия","Belize":"Белиз","Benin":"Бенин","Bhutan":"Бутан","Bolivia":"Боливия","Bosnia and Herz.":"Босния и Герцеговина","Botswana":"Ботсвана",
+"Brazil":"Бразилия","Brunei":"Бруней","Bulgaria":"Болгария","Burkina Faso":"Буркина-Фасо","Burundi":"Бурунди","Cambodia":"Камбоджа","Cameroon":"Камерун","Canada":"Канада","Central African Rep.":"ЦАР","Chad":"Чад",
+"Chile":"Чили","China":"Китай","Colombia":"Колумбия","Congo":"Конго","Costa Rica":"Коста-Рика","Croatia":"Хорватия","Cuba":"Куба","Cyprus":"Кипр","Czechia":"Чехия","Dem. Rep. Congo":"ДР Конго",
+"Denmark":"Дания","Djibouti":"Джибути","Dominican Rep.":"Доминикана","Ecuador":"Эквадор","Egypt":"Египет","El Salvador":"Сальвадор","Eq. Guinea":"Эк. Гвинея","Eritrea":"Эритрея","Estonia":"Эстония","eSwatini":"Эсватини",
+"Ethiopia":"Эфиопия","Falkland Is.":"Фолкленды","Fiji":"Фиджи","Finland":"Финляндия","France":"Франция","Gabon":"Габон","Gambia":"Гамбия","Georgia":"Грузия","Germany":"Германия","Ghana":"Гана",
+"Greece":"Греция","Greenland":"Гренландия","Guatemala":"Гватемала","Guinea":"Гвинея","Guinea-Bissau":"Гвинея-Бисау","Guyana":"Гайана","Haiti":"Гаити","Honduras":"Гондурас","Hungary":"Венгрия","Iceland":"Исландия",
+"India":"Индия","Indonesia":"Индонезия","Iran":"Иран","Iraq":"Ирак","Ireland":"Ирландия","Israel":"Израиль","Italy":"Италия","Côte d'Ivoire":"Кот-д’Ивуар","Jamaica":"Ямайка","Japan":"Япония",
+"Jordan":"Иордания","Kazakhstan":"Казахстан","Kenya":"Кения","Kosovo":"Косово","Kuwait":"Кувейт","Kyrgyzstan":"Кыргызстан","Laos":"Лаос","Latvia":"Латвия","Lebanon":"Ливан","Lesotho":"Лесото",
+"Liberia":"Либерия","Libya":"Ливия","Liechtenstein":"Лихтенштейн","Lithuania":"Литва","Luxembourg":"Люксембург","Macedonia":"Северная Македония","North Macedonia":"Северная Македония","Madagascar":"Мадагаскар","Malawi":"Малави","Malaysia":"Малайзия",
+"Mali":"Мали","Malta":"Мальта","Mauritania":"Мавритания","Mexico":"Мексика","Moldova":"Молдова","Monaco":"Монако","Mongolia":"Монголия","Montenegro":"Черногория","Morocco":"Марокко","Mozambique":"Мозамбик",
+"Myanmar":"Мьянма","Namibia":"Намибия","Nepal":"Непал","Netherlands":"Нидерланды","New Caledonia":"Н. Каледония","New Zealand":"Новая Зеландия","Nicaragua":"Никарагуа","Niger":"Нигер","Nigeria":"Нигерия","N. Cyprus":"Сев. Кипр",
+"North Korea":"КНДР","Norway":"Норвегия","Oman":"Оман","Pakistan":"Пакистан","Palestine":"Палестина","Panama":"Панама","Papua New Guinea":"Папуа — Новая Гвинея","Paraguay":"Парагвай","Peru":"Перу","Philippines":"Филиппины",
+"Poland":"Польша","Portugal":"Португалия","Puerto Rico":"Пуэрто-Рико","Qatar":"Катар","Romania":"Румыния","Russia":"Россия","Rwanda":"Руанда","W. Sahara":"Зап. Сахара","Saudi Arabia":"Саудовская Аравия","Senegal":"Сенегал",
+"Serbia":"Сербия","Sierra Leone":"Сьерра-Леоне","Slovakia":"Словакия","Slovenia":"Словения","Solomon Is.":"Соломоновы о-ва","Somalia":"Сомали","Somaliland":"Сомалиленд","South Africa":"ЮАР","South Korea":"Южная Корея","S. Sudan":"Южный Судан",
+"Spain":"Испания","Sri Lanka":"Шри-Ланка","Sudan":"Судан","Suriname":"Суринам","Sweden":"Швеция","Switzerland":"Швейцария","Syria":"Сирия","Taiwan":"Тайвань","Tajikistan":"Таджикистан","Tanzania":"Танзания",
+"Thailand":"Таиланд","Timor-Leste":"Восточный Тимор","Togo":"Того","Trinidad and Tobago":"Тринидад и Тобаго","Tunisia":"Тунис","Turkey":"Турция","Turkmenistan":"Туркменистан","Uganda":"Уганда","Ukraine":"Украина","United Arab Emirates":"ОАЭ",
+"United Kingdom":"Великобритания","United States of America":"США","Uruguay":"Уругвай","Uzbekistan":"Узбекистан","Vanuatu":"Вануату","Venezuela":"Венесуэла","Vietnam":"Вьетнам","Yemen":"Йемен","Zambia":"Замбия","Zimbabwe":"Зимбабве",
+"San Marino":"Сан-Марино","Vatican":"Ватикан","Bahrain":"Бахрейн","Singapore":"Сингапур","Maldives":"Мальдивы","Mauritius":"Маврикий","Cabo Verde":"Кабо-Верде","Comoros":"Коморы","Seychelles":"Сейшелы","Bermuda":"Бермуды"
+};
+// Столицы: [название, широта, долгота, ярус]. Ярус 1 виден при малом приближении, 3 — при большом.
+const CITIES = [
+["Астана",51.13,71.43,1],["Москва",55.75,37.62,1],["Вашингтон",38.90,-77.04,1],["Лондон",51.51,-0.13,1],["Париж",48.86,2.35,1],["Берлин",52.52,13.40,1],
+["Мадрид",40.42,-3.70,1],["Рим",41.90,12.50,1],["Анкара",39.93,32.86,1],["Каир",30.04,31.24,1],["Абу-Даби",24.45,54.38,1],["Дели",28.61,77.21,1],
+["Пекин",39.90,116.41,1],["Токио",35.68,139.69,1],["Сеул",37.57,126.98,1],["Бангкок",13.75,100.50,1],["Ханой",21.03,105.85,1],["Куала-Лумпур",3.14,101.69,1],
+["Мале",4.18,73.51,1],["Баку",40.41,49.87,1],["Тбилиси",41.72,44.79,1],["Ташкент",41.31,69.28,1],["Бишкек",42.87,74.59,1],["Душанбе",38.56,68.77,1],
+["Канберра",-35.28,149.13,1],["Бразилиа",-15.79,-47.88,1],["Оттава",45.42,-75.70,1],["Мехико",19.43,-99.13,1],["Буэнос-Айрес",-34.60,-58.38,1],["Претория",-25.75,28.19,1],
+["Эр-Рияд",24.71,46.68,1],["Тегеран",35.69,51.39,1],["Джакарта",-6.21,106.85,1],["Киев",50.45,30.52,1],
+["Исламабад",33.68,73.05,2],["Минск",53.90,27.57,2],["Варшава",52.23,21.01,2],["Вена",48.21,16.37,2],["Афины",37.98,23.73,2],["Лиссабон",38.72,-9.14,2],["Амстердам",52.37,4.90,2],
+["Брюссель",50.85,4.35,2],["Прага",50.08,14.44,2],["Будапешт",47.50,19.04,2],["Бухарест",44.43,26.10,2],["София",42.70,23.32,2],["Стокгольм",59.33,18.07,2],["Осло",59.91,10.75,2],
+["Хельсинки",60.17,24.94,2],["Копенгаген",55.68,12.57,2],["Дублин",53.35,-6.26,2],["Берн",46.95,7.45,2],["Багдад",33.31,44.37,2],["Дамаск",33.51,36.29,2],["Кабул",34.53,69.17,2],
+["Дакка",23.81,90.41,2],["Улан-Батор",47.89,106.91,2],["Манила",14.60,120.98,2],["Найроби",-1.29,36.82,2],["Аддис-Абеба",9.03,38.74,2],["Алжир",36.75,3.06,2],["Рабат",34.02,-6.84,2],
+["Лима",-12.05,-77.04,2],["Богота",4.71,-74.07,2],["Сантьяго",-33.45,-70.67,2],["Каракас",10.49,-66.88,2],["Веллингтон",-41.29,174.78,2],["Ереван",40.18,44.51,2],["Ашхабад",37.96,58.33,2],
+["Абуджа",9.08,7.40,2],["Киншаса",-4.44,15.27,2],["Хартум",15.50,32.56,2],["Луанда",-8.84,13.23,2],["Доха",25.29,51.53,2],["Кувейт",29.38,47.99,2],["Маскат",23.59,58.41,2],
+["Амман",31.95,35.93,2],["Бейрут",33.89,35.50,2],["Катманду",27.72,85.32,2],["Пхеньян",39.04,125.76,2],["Вьентьян",17.97,102.60,2],["Пномпень",11.56,104.92,2],["Тунис",36.81,10.18,2],
+["Триполи",32.89,13.19,2],["Дакар",14.72,-17.47,2],["Аккра",5.60,-0.19,2],["Гавана",23.11,-82.37,2],["Рейкьявик",64.15,-21.94,2],["Кишинёв",47.01,28.86,2],["Загреб",45.81,15.98,2],
+["Белград",44.79,20.45,2],["Вильнюс",54.69,25.28,2],["Рига",56.95,24.11,2],["Таллин",59.44,24.75,2],
+["Сараево",43.86,18.41,3],["Скопье",41.99,21.43,3],["Тирана",41.33,19.82,3],["Любляна",46.06,14.51,3],["Братислава",48.15,17.11,3],["Мапуту",-25.97,32.57,3],["Лусака",-15.39,28.32,3],
+["Хараре",-17.83,31.05,3],["Могадишо",2.05,45.32,3],["Кампала",0.35,32.58,3],["Додома",-6.16,35.75,3],["Нуакшот",18.09,-15.98,3],["Бамако",12.64,-8.00,3],["Ниамей",13.51,2.11,3],
+["Нджамена",12.13,15.06,3],["Яунде",3.85,11.50,3],["Либревиль",0.42,9.47,3],["Браззавиль",-4.27,15.28,3],["Лома",6.13,1.22,3],["Кингстон",18.00,-76.80,3],["Панама",8.98,-79.52,3],
+["Сан-Хосе",9.93,-84.08,3],["Гватемала",14.63,-90.51,3],["Кито",-0.18,-78.47,3],["Ла-Пас",-16.50,-68.15,3],["Асунсьон",-25.26,-57.58,3],["Монтевидео",-34.90,-56.19,3],
+["Антананариву",-18.88,47.51,3],["Коломбо",6.93,79.85,3]
+];
+
+// Штаты США (ключ — английское название из us-atlas)
+const RU_STATES = {
+"Alabama":"Алабама","Alaska":"Аляска","Arizona":"Аризона","Arkansas":"Арканзас","California":"Калифорния","Colorado":"Колорадо","Connecticut":"Коннектикут","Delaware":"Делавэр","District of Columbia":"Окр. Колумбия",
+"Florida":"Флорида","Georgia":"Джорджия","Hawaii":"Гавайи","Idaho":"Айдахо","Illinois":"Иллинойс","Indiana":"Индиана","Iowa":"Айова","Kansas":"Канзас","Kentucky":"Кентукки","Louisiana":"Луизиана",
+"Maine":"Мэн","Maryland":"Мэриленд","Massachusetts":"Массачусетс","Michigan":"Мичиган","Minnesota":"Миннесота","Mississippi":"Миссисипи","Missouri":"Миссури","Montana":"Монтана","Nebraska":"Небраска","Nevada":"Невада",
+"New Hampshire":"Нью-Гэмпшир","New Jersey":"Нью-Джерси","New Mexico":"Нью-Мексико","New York":"Нью-Йорк","North Carolina":"Сев. Каролина","North Dakota":"Сев. Дакота","Ohio":"Огайо","Oklahoma":"Оклахома","Oregon":"Орегон",
+"Pennsylvania":"Пенсильвания","Rhode Island":"Род-Айленд","South Carolina":"Юж. Каролина","South Dakota":"Юж. Дакота","Tennessee":"Теннесси","Texas":"Техас","Utah":"Юта","Vermont":"Вермонт","Virginia":"Виргиния",
+"Washington":"Вашингтон","West Virginia":"Зап. Виргиния","Wisconsin":"Висконсин","Wyoming":"Вайоминг","Puerto Rico":"Пуэрто-Рико"
+};
+// Города и курорты. Ярус 2 — при среднем приближении, 3 — при сильном, 4 — только при очень сильном.
+CITIES.push(
+// Казахстан
+["Алматы",43.24,76.89,2],["Шымкент",42.32,69.59,3],["Караганда",49.80,73.10,3],["Актобе",50.28,57.21,3],["Актау",43.65,51.15,3],["Атырау",47.11,51.90,3],["Усть-Каменогорск",49.95,82.61,3],["Павлодар",52.29,76.97,3],["Костанай",53.21,63.63,3],["Туркестан",43.30,68.25,4],
+// Россия
+["Санкт-Петербург",59.93,30.34,2],["Челябинск",55.16,61.40,2],["Новосибирск",55.03,82.92,2],["Екатеринбург",56.84,60.65,2],["Казань",55.79,49.12,3],["Нижний Новгород",56.33,44.00,3],["Самара",53.20,50.15,3],["Омск",54.99,73.37,3],
+["Ростов-на-Дону",47.24,39.72,3],["Уфа",54.74,55.97,3],["Красноярск",56.01,92.85,3],["Пермь",58.01,56.23,3],["Воронеж",51.67,39.18,3],["Волгоград",48.71,44.51,3],["Краснодар",45.04,38.98,3],["Сочи",43.60,39.73,3],
+["Владивосток",43.12,131.89,3],["Иркутск",52.29,104.30,3],["Тюмень",57.15,65.53,3],["Хабаровск",48.48,135.08,3],["Калининград",54.71,20.51,3],["Мурманск",68.97,33.08,3],["Якутск",62.03,129.73,3],["Оренбург",51.77,55.10,3],
+["Барнаул",53.35,83.77,3],["Саратов",51.54,46.03,3],["Курган",55.44,65.34,4],["Томск",56.50,84.97,4],["Кемерово",55.35,86.09,4],
+// Китай
+["Шанхай",31.23,121.47,2],["Гуанчжоу",23.13,113.26,2],["Урумчи",43.83,87.62,2],["Санья",18.25,109.51,3],["Гонконг",22.32,114.17,3],["Чэнду",30.57,104.07,3],["Сиань",34.34,108.94,3],["Харбин",45.80,126.53,3],["Хайкоу",20.04,110.20,4],
+// Турция
+["Стамбул",41.01,28.98,2],["Анталья",36.90,30.70,3],["Измир",38.42,27.14,3],["Бодрум",37.04,27.43,4],["Мармарис",36.85,28.27,4],["Аланья",36.54,32.00,4],["Трабзон",41.00,39.72,4],
+// США
+["Нью-Йорк",40.71,-74.01,2],["Лос-Анджелес",34.05,-118.24,2],["Чикаго",41.88,-87.63,2],["Хьюстон",29.76,-95.37,3],["Феникс",33.45,-112.07,3],["Филадельфия",39.95,-75.17,3],["Сан-Диего",32.72,-117.16,3],
+["Даллас",32.78,-96.80,3],["Сан-Франциско",37.77,-122.42,3],["Сиэтл",47.61,-122.33,3],["Денвер",39.74,-104.99,3],["Бостон",42.36,-71.06,3],["Атланта",33.75,-84.39,3],["Майами",25.76,-80.19,3],
+["Орландо",28.54,-81.38,3],["Лас-Вегас",36.17,-115.14,3],["Новый Орлеан",29.95,-90.07,3],["Детройт",42.33,-83.05,3],["Миннеаполис",44.98,-93.27,3],["Солт-Лейк-Сити",40.76,-111.89,3],
+["Портленд",45.52,-122.68,3],["Канзас-Сити",39.10,-94.58,3],["Сент-Луис",38.63,-90.20,3],["Нэшвилл",36.16,-86.78,3],["Шарлотт",35.23,-80.84,3],["Питтсбург",40.44,-79.99,3],["Кливленд",41.50,-81.69,3],
+["Балтимор",39.29,-76.61,3],["Альбукерке",35.08,-106.65,3],["Оклахома-Сити",35.47,-97.52,3],["Омаха",41.26,-95.93,3],["Бойсе",43.62,-116.20,3],["Билингс",45.78,-108.50,3],["Мемфис",35.15,-90.05,3],
+["Индианаполис",39.77,-86.16,3],["Милуоки",43.04,-87.91,3],["Луисвилл",38.25,-85.76,3],["Тампа",27.95,-82.46,3],["Джексонвилл",30.33,-81.66,3],["Тусон",32.22,-110.97,3],["Сан-Антонио",29.42,-98.49,3],
+["Бирмингем",33.52,-86.80,3],["Де-Мойн",41.59,-93.62,3],["Литл-Рок",34.75,-92.29,3],["Джексон",32.30,-90.18,3],["Колумбус",39.96,-83.00,3],["Провиденс",41.82,-71.41,3],["Гонолулу",21.31,-157.86,3],["Анкоридж",61.22,-149.90,3],
+// Курорты и крупные города других стран
+["Дубай",25.20,55.27,2],["Шарм-эль-Шейх",27.91,34.33,3],["Хургада",27.26,33.81,3],["Александрия",31.20,29.92,3],["Луксор",25.69,32.64,4],
+["Пхукет",7.88,98.39,3],["Паттайя",12.93,100.88,3],["Чиангмай",18.79,98.99,3],["Самуи",9.51,100.01,4],["Краби",8.09,98.91,4],
+["Хошимин",10.82,106.63,2],["Нячанг",12.24,109.19,3],["Дананг",16.05,108.22,3],["Фукуок",10.22,103.96,3],
+["Денпасар (Бали)",-8.65,115.22,3],["Сурабая",-7.25,112.75,3],["Сингапур",1.35,103.82,2],["Лангкави",6.35,99.80,4],["Пенанг",5.41,100.33,3],["Кота-Кинабалу",5.98,116.07,4],
+["Мумбаи",19.08,72.88,2],["Гоа",15.50,73.83,3],["Колката",22.57,88.36,3],["Ченнаи",13.08,80.27,3],
+["Пусан",35.18,129.08,3],["Чеджу",33.50,126.53,3],["Осака",34.69,135.50,2],["Киото",35.01,135.77,3],["Саппоро",43.06,141.35,3],["Нагоя",35.18,136.91,3],["Наха (Окинава)",26.21,127.68,4],
+["Сидней",-33.87,151.21,2],["Мельбурн",-37.81,144.96,2],["Брисбен",-27.47,153.03,3],["Перт",-31.95,115.86,3],["Аделаида",-34.93,138.60,3],
+["Батуми",41.65,41.64,3],["Чолпон-Ата",42.65,77.08,4],["Ош",40.53,72.80,3],["Самарканд",39.65,66.96,3],["Бухара",39.77,64.43,4],["Хива",41.38,60.36,4],
+["Ираклион",35.34,25.13,3],["Родос",36.43,28.22,4],["Салоники",40.64,22.94,3],
+["Барселона",41.39,2.17,2],["Малага",36.72,-4.42,3],["Пальма",39.57,2.65,4],["Валенсия",39.47,-0.38,3],["Севилья",37.39,-5.98,3],
+["Милан",45.46,9.19,2],["Венеция",45.44,12.32,3],["Неаполь",40.85,14.27,3],["Флоренция",43.77,11.26,3],
+["Ницца",43.70,7.27,3],["Марсель",43.30,5.37,3],["Лион",45.76,4.84,3],["Мюнхен",48.14,11.58,2],["Франкфурт",50.11,8.68,3],["Гамбург",53.55,9.99,3],
+["Манчестер",53.48,-2.24,3],["Эдинбург",55.95,-3.19,3],["Подгорица",42.44,19.26,3],["Тиват",42.43,18.70,4],["Никосия",35.19,33.38,3],["Лимасол",34.68,33.04,4],
+["Хаммамет",36.40,10.62,4],["Касабланка",33.57,-7.59,3],["Марракеш",31.63,-8.01,3],["Агадир",30.43,-9.60,4],["Санто-Доминго",18.49,-69.93,3],["Пунта-Кана",18.58,-68.40,4],["Варадеро",23.15,-81.25,4],
+["Канкун",21.16,-86.85,3],["Гвадалахара",20.67,-103.35,3],["Торонто",43.65,-79.38,2],["Ванкувер",49.28,-123.12,3],["Монреаль",45.50,-73.57,3],["Рио-де-Жанейро",-22.91,-43.17,2],["Сан-Паулу",-23.55,-46.63,2],
+["Акаба",29.53,35.01,4],["Тель-Авив",32.09,34.78,3],["Занзибар",-6.16,39.20,4],["Момбаса",-4.04,39.67,4],["Порту",41.15,-8.61,3],["Фару",37.02,-7.93,4],["Сплит",43.51,16.44,4],["Дубровник",42.65,18.09,4],
+["Варна",43.21,27.91,4],["Бургас",42.50,27.47,4],["Краков",50.06,19.94,3]
+);
+
+
+// ---------- ДАННЫЕ ГРАНИЦ: Natural Earth (world-atlas), берутся из интернета и запоминаются ----------
+const URLS = [
+  'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json',
+  'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json'
+];
+const CACHE_KEY = 'easyspeak_map_topo_v1';
+
+// ---------- ПРОЕКЦИЯ Natural Earth ----------
+function ne(lon, lat) {
+  const l = lon * Math.PI / 180, p = lat * Math.PI / 180, p2 = p * p, p4 = p2 * p2;
+  return [
+    l * (0.8707 - 0.131979 * p2 + p4 * (-0.013791 + p4 * (0.003971 * p2 - 0.001529 * p4))),
+    p * (1.007226 + p2 * (0.015085 + p4 * (-0.044475 + 0.028874 * p2 - 0.005916 * p4)))
+  ];
+}
+const XM = ne(180, 0)[0], YM = ne(0, 90)[1], SC = 1000 / (2 * XM);
+const proj = (lon, lat) => { const q = ne(lon, lat); return [(q[0] + XM) * SC, (YM - q[1]) * SC]; };
+const W0 = 1000, H0 = 2 * YM * SC;
+
+// ---------- РАЗБОР TopoJSON ----------
+function decodeArcs(topo) {
+  const sx = topo.transform ? topo.transform.scale[0] : 1, sy = topo.transform ? topo.transform.scale[1] : 1;
+  const tx = topo.transform ? topo.transform.translate[0] : 0, ty = topo.transform ? topo.transform.translate[1] : 0;
+  return topo.arcs.map(arc => { let x = 0, y = 0; return arc.map(p => { x += p[0]; y += p[1]; return [x * sx + tx, y * sy + ty]; }); });
+}
+function ringPoints(arcs, ids) {
+  const out = [];
+  ids.forEach((id, n) => {
+    const a = id >= 0 ? arcs[id] : arcs[~id].slice().reverse();
+    for (let i = n ? 1 : 0; i < a.length; i++) out.push(a[i]);
+  });
+  return out;
+}
+// Кольцо -> набор путей. Долгота «разворачивается», чтобы не было прыжка 180 -> -180 (из-за него рисовались полосы через всю карту).
+function ringToD(pts) {
+  const u = []; let prev = null, mn = 1e9, mx = -1e9;
+  pts.forEach(p => {
+    let lo = p[0];
+    if (prev !== null) { while (lo - prev > 180) lo -= 360; while (lo - prev < -180) lo += 360; }
+    prev = lo; mn = Math.min(mn, lo); mx = Math.max(mx, lo); u.push([lo, p[1]]);
+  });
+  const mk = sh => 'M' + u.map(p => { const q = proj(p[0] + sh, p[1]); return q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join('L') + 'Z';
+  let d = mk(0);
+  if (mx > 180) d += mk(-360);
+  if (mn < -180) d += mk(360);
+  return d;
+}
+function flatArcIds(a, set) { a.forEach(v => Array.isArray(v) ? flatArcIds(v, set) : set.add(v < 0 ? ~v : v)); }
+
+let COUNTRIES = [];
+function build(topo) {
+  const arcs = decodeArcs(topo);
+  const geoms = topo.objects.countries.geometries;
+  const arcOwners = new Map();
+  COUNTRIES = [];
+  geoms.forEach((g, gi) => {
+    const name = (g.properties && g.properties.name) || '';
+    if (/Antarctic/i.test(name)) return;
+    const polys = g.type === 'Polygon' ? [g.arcs] : g.type === 'MultiPolygon' ? g.arcs : [];
+    if (!polys.length) return;
+    let d = '', best = null;
+    polys.forEach(poly => {
+      const raw = poly.map(r => ringPoints(arcs, r));
+      raw.forEach(r => { d += ringToD(r); });
+      const rings = raw.map(r => r.map(p => proj(p[0], p[1])));
+      const o = rings[0]; let a = 0, cx = 0, cy = 0, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      for (let i = 0; i < o.length; i++) {
+        const p = o[i], q = o[(i + 1) % o.length], cr = p[0] * q[1] - q[0] * p[1];
+        a += cr; cx += (p[0] + q[0]) * cr; cy += (p[1] + q[1]) * cr;
+        x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]);
+      }
+      const area = Math.abs(a) / 2;
+      if (!best || area > best.area) best = { area, cx: a ? cx / (3 * a) : (x0 + x1) / 2, cy: a ? cy / (3 * a) : (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 };
+    });
+    const set = new Set(); flatArcIds(g.arcs, set);
+    const c = { i: COUNTRIES.length, name, ru: RU[name] || name, d, best, nb: new Set(), color: 0 };
+    set.forEach(id => { if (!arcOwners.has(id)) arcOwners.set(id, []); arcOwners.get(id).push(c.i); });
+    COUNTRIES.push(c);
+  });
+  // соседи — страны с общей дугой; раскраска без одинаковых цветов у соседей
+  arcOwners.forEach(list => { for (const a of list) for (const b of list) if (a !== b) COUNTRIES[a].nb.add(b); });
+  const PAL = 7;
+  [...COUNTRIES].sort((a, b) => b.nb.size - a.nb.size).forEach(c => {
+    const used = new Set([...c.nb].map(n => COUNTRIES[n].color));
+    let k = 0; while (used.has(k) && k < PAL) k++;
+    c.color = k % PAL;
+  });
+}
+
+// ---------- ОТРИСОВКА ----------
+const FILL = ['#f8c9c9', '#fde3a7', '#d6efa3', '#a9e5cf', '#b9d9f7', '#dcc7f1', '#f7bcd9'];
+const gStates = document.getElementById('map_states');
+const svg = document.getElementById('map_svg'), gWorld = document.getElementById('map_world'), gLabels = document.getElementById('map_labels');
+const stage = document.getElementById('map_stage'), info = document.getElementById('map_info'), statusEl = document.getElementById('map_status');
+let k = 1, tx = 0, ty = 0, k0 = 1, selected = -1;
+
+const KK_C = {"Afghanistan": "Ауғанстан", "Albania": "Албания", "Algeria": "Алжир", "Andorra": "Андорра", "Angola": "Ангола", "Argentina": "Аргентина", "Armenia": "Армения", "Australia": "Аустралия", "Austria": "Аустрия", "Azerbaijan": "Әзірбайжан", "Bahamas": "Багам аралдары", "Bangladesh": "Бангладеш", "Belarus": "Беларусь", "Belgium": "Бельгия", "Belize": "Белиз", "Benin": "Бенин", "Bhutan": "Бутан", "Bolivia": "Боливия", "Bosnia and Herz.": "Босния және Герцеговина", "Botswana": "Ботсвана", "Brazil": "Бразилия", "Brunei": "Бруней", "Bulgaria": "Болгария", "Burkina Faso": "Буркина-Фасо", "Burundi": "Бурунди", "Cambodia": "Камбоджа", "Cameroon": "Камерун", "Canada": "Канада", "Central African Rep.": "Орт. Африка Респ.", "Chad": "Чад", "Chile": "Чили", "China": "Қытай", "Colombia": "Колумбия", "Congo": "Конго", "Costa Rica": "Коста-Рика", "Croatia": "Хорватия", "Cuba": "Куба", "Cyprus": "Кипр", "Czechia": "Чехия", "Dem. Rep. Congo": "Конго ДР", "Denmark": "Дания", "Djibouti": "Джибути", "Dominican Rep.": "Доминикан Респ.", "Ecuador": "Эквадор", "Egypt": "Мысыр", "El Salvador": "Сальвадор", "Eq. Guinea": "Экв. Гвинея", "Eritrea": "Эритрея", "Estonia": "Эстония", "eSwatini": "Эсватини", "Ethiopia": "Эфиопия", "Falkland Is.": "Фолкленд аралдары", "Fiji": "Фиджи", "Finland": "Финляндия", "France": "Франция", "Gabon": "Габон", "Gambia": "Гамбия", "Georgia": "Грузия", "Germany": "Германия", "Ghana": "Гана", "Greece": "Грекия", "Greenland": "Гренландия", "Guatemala": "Гватемала", "Guinea": "Гвинея", "Guinea-Bissau": "Гвинея-Бисау", "Guyana": "Гайана", "Haiti": "Гаити", "Honduras": "Гондурас", "Hungary": "Мажарстан", "Iceland": "Исландия", "India": "Үндістан", "Indonesia": "Индонезия", "Iran": "Иран", "Iraq": "Ирак", "Ireland": "Ирландия", "Israel": "Израиль", "Italy": "Италия", "Côte d'Ivoire": "Кот-д’Ивуар", "Jamaica": "Ямайка", "Japan": "Жапония", "Jordan": "Иордания", "Kazakhstan": "Қазақстан", "Kenya": "Кения", "Kosovo": "Косово", "Kuwait": "Кувейт", "Kyrgyzstan": "Қырғызстан", "Laos": "Лаос", "Latvia": "Латвия", "Lebanon": "Ливан", "Lesotho": "Лесото", "Liberia": "Либерия", "Libya": "Ливия", "Liechtenstein": "Лихтенштейн", "Lithuania": "Литва", "Luxembourg": "Люксембург", "Macedonia": "Солтүстік Македония", "North Macedonia": "Солтүстік Македония", "Madagascar": "Мадагаскар", "Malawi": "Малави", "Malaysia": "Малайзия", "Mali": "Мали", "Malta": "Мальта", "Mauritania": "Мавритания", "Mexico": "Мексика", "Moldova": "Молдова", "Monaco": "Монако", "Mongolia": "Моңғолия", "Montenegro": "Черногория", "Morocco": "Марокко", "Mozambique": "Мозамбик", "Myanmar": "Мьянма", "Namibia": "Намибия", "Nepal": "Непал", "Netherlands": "Нидерланд", "New Caledonia": "Жаңа Каледония", "New Zealand": "Жаңа Зеландия", "Nicaragua": "Никарагуа", "Niger": "Нигер", "Nigeria": "Нигерия", "N. Cyprus": "Солтүстік Кипр", "North Korea": "КХДР", "Norway": "Норвегия", "Oman": "Оман", "Pakistan": "Пәкістан", "Palestine": "Палестина", "Panama": "Панама", "Papua New Guinea": "Папуа — Жаңа Гвинея", "Paraguay": "Парагвай", "Peru": "Перу", "Philippines": "Филиппин", "Poland": "Польша", "Portugal": "Португалия", "Puerto Rico": "Пуэрто-Рико", "Qatar": "Катар", "Romania": "Румыния", "Russia": "Ресей", "Rwanda": "Руанда", "W. Sahara": "Батыс Сахара", "Saudi Arabia": "Сауд Арабиясы", "Senegal": "Сенегал", "Serbia": "Сербия", "Sierra Leone": "Сьерра-Леоне", "Slovakia": "Словакия", "Slovenia": "Словения", "Solomon Is.": "Соломон аралдары", "Somalia": "Сомали", "Somaliland": "Сомалиленд", "South Africa": "Оңт. Африка", "South Korea": "Оңтүстік Корея", "S. Sudan": "Оңтүстік Судан", "Spain": "Испания", "Sri Lanka": "Шри-Ланка", "Sudan": "Судан", "Suriname": "Суринам", "Sweden": "Швеция", "Switzerland": "Швейцария", "Syria": "Сирия", "Taiwan": "Тайвань", "Tajikistan": "Тәжікстан", "Tanzania": "Танзания", "Thailand": "Тайланд", "Timor-Leste": "Шығыс Тимор", "Togo": "Того", "Trinidad and Tobago": "Тринидад және Тобаго", "Tunisia": "Тунис", "Turkey": "Түркия", "Turkmenistan": "Түрікменстан", "Uganda": "Уганда", "Ukraine": "Украина", "United Arab Emirates": "БАӘ", "United Kingdom": "Ұлыбритания", "United States of America": "АҚШ", "Uruguay": "Уругвай", "Uzbekistan": "Өзбекстан", "Vanuatu": "Вануату", "Venezuela": "Венесуэла", "Vietnam": "Вьетнам", "Yemen": "Йемен", "Zambia": "Замбия", "Zimbabwe": "Зимбабве", "San Marino": "Сан-Марино", "Vatican": "Ватикан", "Bahrain": "Бахрейн", "Singapore": "Сингапур", "Maldives": "Мальдив аралдары", "Mauritius": "Маврикий", "Cabo Verde": "Кабо-Верде", "Comoros": "Комор аралдары", "Seychelles": "Сейшел аралдары", "Bermuda": "Бермуд аралдары"};
+const KK_S = {"Alabama": "Алабама", "Alaska": "Аляска", "Arizona": "Аризона", "Arkansas": "Арканзас", "California": "Калифорния", "Colorado": "Колорадо", "Connecticut": "Коннектикут", "Delaware": "Делавэр", "District of Columbia": "Колумбия окр.", "Florida": "Флорида", "Georgia": "Джорджия", "Hawaii": "Гавайи", "Idaho": "Айдахо", "Illinois": "Иллинойс", "Indiana": "Индиана", "Iowa": "Айова", "Kansas": "Канзас", "Kentucky": "Кентукки", "Louisiana": "Луизиана", "Maine": "Мэн", "Maryland": "Мэриленд", "Massachusetts": "Массачусетс", "Michigan": "Мичиган", "Minnesota": "Миннесота", "Mississippi": "Миссисипи", "Missouri": "Миссури", "Montana": "Монтана", "Nebraska": "Небраска", "Nevada": "Невада", "New Hampshire": "Нью-Гэмпшир", "New Jersey": "Нью-Джерси", "New Mexico": "Нью-Мексико", "New York": "Нью-Йорк", "North Carolina": "Солт. Каролина", "North Dakota": "Солт. Дакота", "Ohio": "Огайо", "Oklahoma": "Оклахома", "Oregon": "Орегон", "Pennsylvania": "Пенсильвания", "Rhode Island": "Род-Айленд", "South Carolina": "Оңт. Каролина", "South Dakota": "Оңт. Дакота", "Tennessee": "Теннесси", "Texas": "Техас", "Utah": "Юта", "Vermont": "Вермонт", "Virginia": "Виргиния", "Washington": "Вашингтон", "West Virginia": "Бат. Виргиния", "Wisconsin": "Висконсин", "Wyoming": "Вайоминг", "Puerto Rico": "Пуэрто-Рико"};
+const dn = c => (uiLang === 'en' ? c.name : uiLang === 'kk' ? (KK_C[c.name] || c.ru) : c.ru);
+const KK_T = {"Москва": "Мәскеу", "Абу-Даби": "Әбу-Даби", "Пекин": "Бейжің", "Бишкек": "Бішкек", "Афины": "Афина", "Багдад": "Бағдад", "Улан-Батор": "Ұланбатыр", "Лома": "Ломе", "Караганда": "Қарағанды", "Актобе": "Ақтөбе", "Актау": "Ақтау", "Усть-Каменогорск": "Өскемен", "Костанай": "Қостанай", "Туркестан": "Түркістан", "Челябинск": "Челябі", "Новосибирск": "Новосібір", "Казань": "Қазан", "Омск": "Омбы", "Тюмень": "Түмен", "Оренбург": "Орынбор", "Томск": "Томбы", "Урумчи": "Үрімші", "Феникс": "Финикс", "Новый Орлеан": "Жаңа Орлеан", "Билингс": "Биллингс", "Чолпон-Ата": "Шолпан-Ата", "Самарканд": "Самарқанд", "Бухара": "Бұхара", "Хива": "Хиуа", "Акаба": "Ақаба"};
+const EN_T = {"Астана": "Astana", "Москва": "Moscow", "Вашингтон": "Washington, D.C.", "Лондон": "London", "Париж": "Paris", "Берлин": "Berlin", "Мадрид": "Madrid", "Рим": "Rome", "Анкара": "Ankara", "Каир": "Cairo", "Абу-Даби": "Abu Dhabi", "Дели": "Delhi", "Пекин": "Beijing", "Токио": "Tokyo", "Сеул": "Seoul", "Бангкок": "Bangkok", "Ханой": "Hanoi", "Куала-Лумпур": "Kuala Lumpur", "Мале": "Malé", "Баку": "Baku", "Тбилиси": "Tbilisi", "Ташкент": "Tashkent", "Бишкек": "Bishkek", "Душанбе": "Dushanbe", "Канберра": "Canberra", "Бразилиа": "Brasília", "Оттава": "Ottawa", "Мехико": "Mexico City", "Буэнос-Айрес": "Buenos Aires", "Претория": "Pretoria", "Эр-Рияд": "Riyadh", "Тегеран": "Tehran", "Джакарта": "Jakarta", "Киев": "Kyiv", "Исламабад": "Islamabad", "Минск": "Minsk", "Варшава": "Warsaw", "Вена": "Vienna", "Афины": "Athens", "Лиссабон": "Lisbon", "Амстердам": "Amsterdam", "Брюссель": "Brussels", "Прага": "Prague", "Будапешт": "Budapest", "Бухарест": "Bucharest", "София": "Sofia", "Стокгольм": "Stockholm", "Осло": "Oslo", "Хельсинки": "Helsinki", "Копенгаген": "Copenhagen", "Дублин": "Dublin", "Берн": "Bern", "Багдад": "Baghdad", "Дамаск": "Damascus", "Кабул": "Kabul", "Дакка": "Dhaka", "Улан-Батор": "Ulaanbaatar", "Манила": "Manila", "Найроби": "Nairobi", "Аддис-Абеба": "Addis Ababa", "Алжир": "Algiers", "Рабат": "Rabat", "Лима": "Lima", "Богота": "Bogotá", "Сантьяго": "Santiago", "Каракас": "Caracas", "Веллингтон": "Wellington", "Ереван": "Yerevan", "Ашхабад": "Ashgabat", "Абуджа": "Abuja", "Киншаса": "Kinshasa", "Хартум": "Khartoum", "Луанда": "Luanda", "Доха": "Doha", "Кувейт": "Kuwait City", "Маскат": "Muscat", "Амман": "Amman", "Бейрут": "Beirut", "Катманду": "Kathmandu", "Пхеньян": "Pyongyang", "Вьентьян": "Vientiane", "Пномпень": "Phnom Penh", "Тунис": "Tunis", "Триполи": "Tripoli", "Дакар": "Dakar", "Аккра": "Accra", "Гавана": "Havana", "Рейкьявик": "Reykjavik", "Кишинёв": "Chișinău", "Загреб": "Zagreb", "Белград": "Belgrade", "Вильнюс": "Vilnius", "Рига": "Riga", "Таллин": "Tallinn", "Сараево": "Sarajevo", "Скопье": "Skopje", "Тирана": "Tirana", "Любляна": "Ljubljana", "Братислава": "Bratislava", "Мапуту": "Maputo", "Лусака": "Lusaka", "Хараре": "Harare", "Могадишо": "Mogadishu", "Кампала": "Kampala", "Додома": "Dodoma", "Нуакшот": "Nouakchott", "Бамако": "Bamako", "Ниамей": "Niamey", "Нджамена": "N'Djamena", "Яунде": "Yaoundé", "Либревиль": "Libreville", "Браззавиль": "Brazzaville", "Лома": "Lomé", "Кингстон": "Kingston", "Панама": "Panama City", "Сан-Хосе": "San José", "Гватемала": "Guatemala City", "Кито": "Quito", "Ла-Пас": "La Paz", "Асунсьон": "Asunción", "Монтевидео": "Montevideo", "Антананариву": "Antananarivo", "Коломбо": "Colombo", "Алматы": "Almaty", "Шымкент": "Shymkent", "Караганда": "Karaganda", "Актобе": "Aktobe", "Актау": "Aktau", "Атырау": "Atyrau", "Усть-Каменогорск": "Oskemen", "Павлодар": "Pavlodar", "Костанай": "Kostanay", "Туркестан": "Turkistan", "Санкт-Петербург": "Saint Petersburg", "Челябинск": "Chelyabinsk", "Новосибирск": "Novosibirsk", "Екатеринбург": "Yekaterinburg", "Казань": "Kazan", "Нижний Новгород": "Nizhny Novgorod", "Самара": "Samara", "Омск": "Omsk", "Ростов-на-Дону": "Rostov-on-Don", "Уфа": "Ufa", "Красноярск": "Krasnoyarsk", "Пермь": "Perm", "Воронеж": "Voronezh", "Волгоград": "Volgograd", "Краснодар": "Krasnodar", "Сочи": "Sochi", "Владивосток": "Vladivostok", "Иркутск": "Irkutsk", "Тюмень": "Tyumen", "Хабаровск": "Khabarovsk", "Калининград": "Kaliningrad", "Мурманск": "Murmansk", "Якутск": "Yakutsk", "Оренбург": "Orenburg", "Барнаул": "Barnaul", "Саратов": "Saratov", "Курган": "Kurgan", "Томск": "Tomsk", "Кемерово": "Kemerovo", "Шанхай": "Shanghai", "Гуанчжоу": "Guangzhou", "Урумчи": "Urumqi", "Санья": "Sanya", "Гонконг": "Hong Kong", "Чэнду": "Chengdu", "Сиань": "Xi'an", "Харбин": "Harbin", "Хайкоу": "Haikou", "Стамбул": "Istanbul", "Анталья": "Antalya", "Измир": "Izmir", "Бодрум": "Bodrum", "Мармарис": "Marmaris", "Аланья": "Alanya", "Трабзон": "Trabzon", "Нью-Йорк": "New York", "Лос-Анджелес": "Los Angeles", "Чикаго": "Chicago", "Хьюстон": "Houston", "Феникс": "Phoenix", "Филадельфия": "Philadelphia", "Сан-Диего": "San Diego", "Даллас": "Dallas", "Сан-Франциско": "San Francisco", "Сиэтл": "Seattle", "Денвер": "Denver", "Бостон": "Boston", "Атланта": "Atlanta", "Майами": "Miami", "Орландо": "Orlando", "Лас-Вегас": "Las Vegas", "Новый Орлеан": "New Orleans", "Детройт": "Detroit", "Миннеаполис": "Minneapolis", "Солт-Лейк-Сити": "Salt Lake City", "Портленд": "Portland", "Канзас-Сити": "Kansas City", "Сент-Луис": "St. Louis", "Нэшвилл": "Nashville", "Шарлотт": "Charlotte", "Питтсбург": "Pittsburgh", "Кливленд": "Cleveland", "Балтимор": "Baltimore", "Альбукерке": "Albuquerque", "Оклахома-Сити": "Oklahoma City", "Омаха": "Omaha", "Бойсе": "Boise", "Билингс": "Billings", "Мемфис": "Memphis", "Индианаполис": "Indianapolis", "Милуоки": "Milwaukee", "Луисвилл": "Louisville", "Тампа": "Tampa", "Джексонвилл": "Jacksonville", "Тусон": "Tucson", "Сан-Антонио": "San Antonio", "Бирмингем": "Birmingham", "Де-Мойн": "Des Moines", "Литл-Рок": "Little Rock", "Джексон": "Jackson", "Колумбус": "Columbus", "Провиденс": "Providence", "Гонолулу": "Honolulu", "Анкоридж": "Anchorage", "Дубай": "Dubai", "Шарм-эль-Шейх": "Sharm El Sheikh", "Хургада": "Hurghada", "Александрия": "Alexandria", "Луксор": "Luxor", "Пхукет": "Phuket", "Паттайя": "Pattaya", "Чиангмай": "Chiang Mai", "Самуи": "Koh Samui", "Краби": "Krabi", "Хошимин": "Ho Chi Minh City", "Нячанг": "Nha Trang", "Дананг": "Da Nang", "Фукуок": "Phu Quoc", "Денпасар (Бали)": "Denpasar (Bali)", "Сурабая": "Surabaya", "Сингапур": "Singapore", "Лангкави": "Langkawi", "Пенанг": "Penang", "Кота-Кинабалу": "Kota Kinabalu", "Мумбаи": "Mumbai", "Гоа": "Goa", "Колката": "Kolkata", "Ченнаи": "Chennai", "Пусан": "Busan", "Чеджу": "Jeju", "Осака": "Osaka", "Киото": "Kyoto", "Саппоро": "Sapporo", "Нагоя": "Nagoya", "Наха (Окинава)": "Naha (Okinawa)", "Сидней": "Sydney", "Мельбурн": "Melbourne", "Брисбен": "Brisbane", "Перт": "Perth", "Аделаида": "Adelaide", "Батуми": "Batumi", "Чолпон-Ата": "Cholpon-Ata", "Ош": "Osh", "Самарканд": "Samarkand", "Бухара": "Bukhara", "Хива": "Khiva", "Ираклион": "Heraklion", "Родос": "Rhodes", "Салоники": "Thessaloniki", "Барселона": "Barcelona", "Малага": "Málaga", "Пальма": "Palma", "Валенсия": "Valencia", "Севилья": "Seville", "Милан": "Milan", "Венеция": "Venice", "Неаполь": "Naples", "Флоренция": "Florence", "Ницца": "Nice", "Марсель": "Marseille", "Лион": "Lyon", "Мюнхен": "Munich", "Франкфурт": "Frankfurt", "Гамбург": "Hamburg", "Манчестер": "Manchester", "Эдинбург": "Edinburgh", "Подгорица": "Podgorica", "Тиват": "Tivat", "Никосия": "Nicosia", "Лимасол": "Limassol", "Хаммамет": "Hammamet", "Касабланка": "Casablanca", "Марракеш": "Marrakesh", "Агадир": "Agadir", "Санто-Доминго": "Santo Domingo", "Пунта-Кана": "Punta Cana", "Варадеро": "Varadero", "Канкун": "Cancún", "Гвадалахара": "Guadalajara", "Торонто": "Toronto", "Ванкувер": "Vancouver", "Монреаль": "Montreal", "Рио-де-Жанейро": "Rio de Janeiro", "Сан-Паулу": "São Paulo", "Акаба": "Aqaba", "Тель-Авив": "Tel Aviv", "Занзибар": "Zanzibar", "Момбаса": "Mombasa", "Порту": "Porto", "Фару": "Faro", "Сплит": "Split", "Дубровник": "Dubrovnik", "Варна": "Varna", "Бургас": "Burgas", "Краков": "Kraków"};
+const cname = r => (uiLang === 'en' ? (EN_T[r] || r) : uiLang === 'kk' ? (KK_T[r] || r) : r);
+const sn = s => (uiLang === 'en' ? s.nm : uiLang === 'kk' ? (KK_S[s.nm] || s.ru) : s.ru);
+function drawWorld() {
+  gWorld.innerHTML = COUNTRIES.map(c => `<path data-i="${c.i}" d="${c.d}" fill="${FILL[c.color]}"></path>`).join('');
+}
+function apply() {
+  const tr = `translate(${tx} ${ty}) scale(${k})`;
+  gWorld.setAttribute('transform', tr); gStates.setAttribute('transform', tr);
+  maybeLoadStates();
+  scheduleLabels();
+}
+function clampView() {
+  k = Math.max(k0 * 0.85, Math.min(k0 * 90, k));
+}
+
+
+// ---------- ШТАТЫ США: маленький файл, грузится только когда приблизили карту над США ----------
+const STATES_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json', STATES_KEY = 'easyspeak_map_states_v1';
+let STATES = [], statesState = 0; // 0 не грузили, 1 грузим, 2 готово, 3 ошибка
+function maybeLoadStates() {
+  if (statesState !== 0 || !COUNTRIES.length || k / k0 < 2.2) return;
+  const a = proj(-128, 50), b = proj(-66, 24), vw = stage.clientWidth, vh = stage.clientHeight;
+  const x0 = tx + a[0] * k, x1 = tx + b[0] * k, y0 = ty + a[1] * k, y1 = ty + b[1] * k;
+  if (x1 < 0 || x0 > vw || y1 < 0 || y0 > vh) return;
+  loadStates();
+}
+async function loadStates() {
+  statesState = 1;
+  try {
+    let text = null;
+    try { text = localStorage.getItem(STATES_KEY); } catch (e) {}
+    if (!text) {
+      const res = await fetch(STATES_URL); if (!res.ok) throw new Error(res.status);
+      text = await res.text();
+      try { localStorage.setItem(STATES_KEY, text); } catch (e) {}
+    }
+    const topo = JSON.parse(text), arcs = decodeArcs(topo), geoms = topo.objects.states.geometries;
+    let html = '';
+    geoms.forEach(g => {
+      const polys = g.type === 'Polygon' ? [g.arcs] : g.type === 'MultiPolygon' ? g.arcs : [];
+      let d = '', best = null;
+      polys.forEach(poly => {
+        const r = ringPoints(arcs, poly[0]); d += ringToD(r);
+        poly.slice(1).forEach(h => { d += ringToD(ringPoints(arcs, h)); });
+        const q = r.map(p => proj(p[0], p[1])); let a = 0, cx = 0, cy = 0;
+        for (let i = 0; i < q.length; i++) { const p = q[i], n = q[(i + 1) % q.length], cr = p[0] * n[1] - n[0] * p[1]; a += cr; cx += (p[0] + n[0]) * cr; cy += (p[1] + n[1]) * cr; }
+        const area = Math.abs(a) / 2;
+        if (a && (!best || area > best.area)) best = { area, cx: cx / (3 * a), cy: cy / (3 * a) };
+      });
+      const nm = (g.properties && g.properties.name) || '';
+      html += `<path d="${d}"></path>`;
+      if (best && RU_STATES[nm]) STATES.push({ ru: RU_STATES[nm], nm, cx: best.cx, cy: best.cy });
+    });
+    gStates.innerHTML = html; statesState = 2; scheduleLabels();
+  } catch (e) { statesState = 3; }
+}
+
+// ---------- ПОДПИСИ без наложений ----------
+const mctx = document.createElement('canvas').getContext('2d');
+const wCache = new Map();
+function textW(str, size, bold) {
+  const key = str + '|' + size + '|' + bold;
+  if (!wCache.has(key)) { mctx.font = (bold ? 'bold ' : '') + size + 'px sans-serif'; wCache.set(key, mctx.measureText(str).width + (bold ? str.length * 0.4 : 0)); }
+  return wCache.get(key);
+}
+let labelTimer = 0;
+function scheduleLabels() { if (!labelTimer) labelTimer = requestAnimationFrame(() => { labelTimer = 0; drawLabels(); }); }
+function drawLabels() {
+  const vw = stage.clientWidth, vh = stage.clientHeight, placed = [];
+  const hit = (b) => placed.some(p => b.x < p.x + p.w && b.x + b.w > p.x && b.y < p.y + p.h && b.y + b.h > p.y);
+  let out = '';
+  // страны: крупные первыми
+  [...COUNTRIES].sort((a, b) => b.best.area - a.best.area).forEach(c => {
+    const sx = tx + c.best.cx * k, sy = ty + c.best.cy * k, bw = c.best.w * k;
+    if (sx < -50 || sy < -20 || sx > vw + 50 || sy > vh + 20) return;
+    const probe = textW(dn(c), 10, true);
+    if (bw < probe * 1.05) return;
+    const size = Math.max(10, Math.min(19, Math.floor(bw / (dn(c).length * 0.72))));
+    const w = textW(dn(c), size, true), h = size + 2;
+    let lx = sx; lx = Math.max(w / 2 + 4, Math.min(vw - w / 2 - 4, lx));
+    const box = { x: lx - w / 2, y: sy - h / 2, w, h };
+    if (hit(box)) return;
+    placed.push(box);
+    out += `<text class="cn" x="${lx.toFixed(1)}" y="${(sy + size * 0.35).toFixed(1)}" font-size="${size}" text-anchor="middle">${dn(c)}</text>`;
+  });
+  // города
+  const z = k / k0;
+  if (STATES.length && z >= 3.2) STATES.forEach(s => {
+    const sx = tx + s.cx * k, sy = ty + s.cy * k;
+    if (sx < 0 || sy < 0 || sx > vw || sy > vh) return;
+    const w = textW(sn(s), 10, false), box = { x: sx - w / 2, y: sy - 7, w, h: 14 };
+    if (hit(box)) return;
+    placed.push(box); out += `<text class="st" x="${sx.toFixed(1)}" y="${(sy + 3.5).toFixed(1)}" text-anchor="middle">${sn(s)}</text>`;
+  });
+  const tierZ = { 1: 1.25, 2: 2.6, 3: 4.8, 4: 9 };
+  let dots = '', texts = '';
+  CITIES.forEach(ct => {
+    if (z < tierZ[ct[3]]) return;
+    const p = proj(ct[2], ct[1]), sx = tx + p[0] * k, sy = ty + p[1] * k;
+    if (sx < -10 || sy < -10 || sx > vw + 10 || sy > vh + 10) return;
+    const cn = cname(ct[0]);
+    const w = textW(cn, 10.5, false), box = { x: sx + 5, y: sy - 6, w: w + 2, h: 13 };
+    dots += `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="2.6"></circle>`;
+    if (!hit(box)) { placed.push(box); texts += `<text class="ct" x="${(sx + 6).toFixed(1)}" y="${(sy + 3.5).toFixed(1)}">${cn}</text>`; }
+  });
+  gLabels.innerHTML = out + dots + texts;
+}
+
+// ---------- ВИД ----------
+function fitBox(lon0, lat0, lon1, lat1, pad) {
+  const pts = [];
+  for (let i = 0; i <= 8; i++) { const lo = lon0 + (lon1 - lon0) * i / 8; pts.push(proj(lo, lat0), proj(lo, lat1)); }
+  for (let i = 0; i <= 8; i++) { const la = lat0 + (lat1 - lat0) * i / 8; pts.push(proj(lon0, la), proj(lon1, la)); }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const w = stage.clientWidth, h = stage.clientHeight;
+  k = Math.min(w / (x1 - x0), h / (y1 - y0)) * (pad || 0.94);
+  tx = w / 2 - (x0 + x1) / 2 * k; ty = h / 2 - (y0 + y1) / 2 * k;
+  clampView(); apply();
+}
+const PRESETS = [
+  [['Еуразия','Евразия','Eurasia'], -25, -12, 150, 75], [['Әлем','Мир','World'], -170, -58, 180, 83], [['Еуропа','Европа','Europe'], -25, 34, 45, 72],
+  [['Орталық Азия','Центральная Азия','Central Asia'], 45, 34, 92, 56], [['Таяу Шығыс','Ближний Восток','Middle East'], 25, 12, 65, 42],
+  [['Азия','Азия','Asia'], 25, -12, 150, 60], [['Африка','Африка','Africa'], -20, -37, 55, 38], [['Америка','Америка','Americas'], -170, -57, -30, 75]
+];
+let presetOn = 0;
+function buildPresets() {
+  document.getElementById('map_presets').innerHTML = PRESETS.map((p, i) => `<button data-p="${i}" class="${i === presetOn ? 'on' : ''}">${p[0][IDX[uiLang]]}</button>`).join('');
+}
+document.getElementById('map_presets').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  presetOn = +b.dataset.p; const p = PRESETS[presetOn]; fitBox(p[1], p[2], p[3], p[4]); buildPresets();
+});
+function zoomAt(cx, cy, s) {
+  const nk = Math.max(k0 * 0.85, Math.min(k0 * 90, k * s)), r = nk / k;
+  tx = cx - (cx - tx) * r; ty = cy - (cy - ty) * r; k = nk; apply();
+}
+document.getElementById('map_zin').onclick = () => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1.6);
+document.getElementById('map_zout').onclick = () => zoomAt(stage.clientWidth / 2, stage.clientHeight / 2, 1 / 1.6);
+svg.addEventListener('wheel', e => { e.preventDefault(); const r = svg.getBoundingClientRect(); zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0016)); }, { passive: false });
+
+// перетаскивание и щипок
+const ptrs = new Map(); let moved = 0, startTarget = null;
+svg.addEventListener('pointerdown', e => {
+  svg.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 1) { moved = 0; startTarget = e.target; }
+});
+svg.addEventListener('pointermove', e => {
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  if (ptrs.size === 1) {
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; moved += Math.abs(dx) + Math.abs(dy);
+    tx += dx; ty += dy; p.x = e.clientX; p.y = e.clientY; apply();
+  } else if (ptrs.size === 2) {
+    const other = [...ptrs.entries()].find(([id]) => id !== e.pointerId)[1];
+    const d0 = Math.hypot(p.x - other.x, p.y - other.y), c0x = (p.x + other.x) / 2, c0y = (p.y + other.y) / 2;
+    p.x = e.clientX; p.y = e.clientY;
+    const d1 = Math.hypot(p.x - other.x, p.y - other.y), c1x = (p.x + other.x) / 2, c1y = (p.y + other.y) / 2;
+    const r = svg.getBoundingClientRect(), s = d0 ? d1 / d0 : 1, nk = Math.max(k0 * 0.85, Math.min(k0 * 90, k * s)), rr = nk / k;
+    tx = (c1x - r.left) - ((c0x - r.left) - tx) * rr; ty = (c1y - r.top) - ((c0y - r.top) - ty) * rr; k = nk; moved += 10; apply();
+  }
+});
+const endPtr = e => {
+  if (ptrs.size === 1 && moved < 6 && startTarget) selectFrom(startTarget);
+  ptrs.delete(e.pointerId);
+};
+svg.addEventListener('pointerup', endPtr); svg.addEventListener('pointercancel', e => ptrs.delete(e.pointerId));
+
+function selectFrom(el) {
+  gWorld.querySelectorAll('.sel').forEach(n => n.classList.remove('sel'));
+  const path = el && el.closest ? el.closest('path[data-i]') : null;
+  if (!path) { info.innerHTML = '<small>' + t('mapHint') + '</small>'; selected = -1; return; }
+  path.classList.add('sel'); gWorld.appendChild(path); // поднять выбранную страну над соседями
+  const c = COUNTRIES[+path.dataset.i]; selected = c.i;
+  info.innerHTML = `<span><b>${dn(c)}</b> <small>${uiLang === 'en' ? '' : c.name}</small></span>`;
+}
+
+// ---------- ЗАГРУЗКА ----------
+async function getTopo() {
+  try { const c = localStorage.getItem(CACHE_KEY); if (c) return JSON.parse(c); } catch (e) {}
+  for (const url of URLS) {
+    try {
+      const res = await fetch(url); if (!res.ok) throw new Error(res.status);
+      const text = await res.text(), topo = JSON.parse(text);
+      try { localStorage.setItem(CACHE_KEY, text); } catch (e) {}
+      return topo;
+    } catch (e) {}
+  }
+  return null;
+}
+let mapStarted = false;
+async function start() {
+  const topo = await getTopo();
+  if (!topo) {
+    statusEl.innerHTML = t('mapFail'); mapStarted = false;
+    return;
+  }
+  build(topo); drawWorld();
+  statusEl.hidden = true;
+  k0 = Math.min(stage.clientWidth / W0, stage.clientHeight / H0);
+  buildPresets(); const p = PRESETS[0]; fitBox(p[1], p[2], p[3], p[4]);
+}
+window.addEventListener('resize', () => { if (document.getElementById('mapOverlay').hidden) return; k0 = Math.min(stage.clientWidth / W0, stage.clientHeight / H0); if (COUNTRIES.length) { const p = PRESETS[presetOn]; fitBox(p[1], p[2], p[3], p[4]); } });
+
+function openMap() {
+  document.getElementById('mapOverlay').hidden = false;
+  k0 = Math.min(stage.clientWidth / W0, stage.clientHeight / H0);
+  if (COUNTRIES.length) { buildPresets(); const p = PRESETS[presetOn]; fitBox(p[1], p[2], p[3], p[4]); return; }
+  if (mapStarted) return;
+  mapStarted = true; statusEl.hidden = false; statusEl.textContent = t('mapLoad');
+  start();
+}
+function closeMap() { document.getElementById('mapOverlay').hidden = true; }
+function mapRefresh() { if (COUNTRIES.length) { buildPresets(); scheduleLabels(); if (selected < 0) selectFrom(null); } }
+
+    window.openMap = openMap; window.closeMap = closeMap; window.mapRefresh = mapRefresh;
+    })();
     // ---------- СТАРТ ----------
     renderPixelIcons();
     buildSources();
